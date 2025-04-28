@@ -174,9 +174,7 @@ public class BST<K extends Comparable<K>, V> implements Iterable<BST.KeyValue<K,
         return size;
     }
 
-    /**
-     * Returns an in-order iterator over key-value pairs.
-     */
+
     @Override
     public Iterator<KeyValue<K, V>> iterator() {
         List<KeyValue<K, V>> list = new ArrayList<>();
