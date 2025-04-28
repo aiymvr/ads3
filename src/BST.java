@@ -1,12 +1,14 @@
 import java.util.*;
 
 /**
- * Binary Search Tree implementation with size tracking and in-order traversal iterator.
- * Key-value pairs are accessible during iteration.
+ * Binary Search Tree (BST) implementation .
+ * - Supports insert (put), delete, search (get).
+ * - Supports in-order traversal using a manual Stack.
+ * - Key-value pairs are accessible during iteration.
  */
 public class BST<K extends Comparable<K>, V> implements Iterable<BST.KeyValue<K, V>> {
 
-    // Private inner class for tree nodes
+    // Private Node class
     private class Node {
         private K key;
         private V val;
@@ -19,9 +21,9 @@ public class BST<K extends Comparable<K>, V> implements Iterable<BST.KeyValue<K,
     }
 
     private Node root; // Root of the BST
-    private int size;  // Number of nodes in the BST
+    private int size;  // Size of the BST (number of nodes)
 
-    // Public inner class to store key-value pairs for iteration
+    // Public KeyValue class for iteration
     public static class KeyValue<K, V> {
         private final K key;
         private final V value;
@@ -41,89 +43,132 @@ public class BST<K extends Comparable<K>, V> implements Iterable<BST.KeyValue<K,
     }
 
     /**
-     * Inserts a key-value pair into the BST.
+     * Inserts a key-value pair into the BST (iterative).
      */
     public void put(K key, V val) {
-        root = put(root, key, val);
-    }
+        Node newNode = new Node(key, val);
 
-    private Node put(Node node, K key, V val) {
-        if (node == null) {
+        if (root == null) {
+            root = newNode;
             size++;
-            return new Node(key, val);
+            return;
         }
-        int cmp = key.compareTo(node.key);
+
+        Node parent = null;
+        Node current = root;
+        while (current != null) {
+            parent = current;
+            int cmp = key.compareTo(current.key);
+            if (cmp < 0) {
+                current = current.left;
+            } else if (cmp > 0) {
+                current = current.right;
+            } else {
+                current.val = val; // Update value if key exists
+                return;
+            }
+        }
+
+        int cmp = key.compareTo(parent.key);
         if (cmp < 0) {
-            node.left = put(node.left, key, val);
-        } else if (cmp > 0) {
-            node.right = put(node.right, key, val);
+            parent.left = newNode;
         } else {
-            node.val = val; // If key already exists, update value
+            parent.right = newNode;
         }
-        return node;
+        size++;
     }
 
     /**
-     * Retrieves the value associated with the given key.
+     * Searches for a value by key (iterative).
      */
     public V get(K key) {
-        Node node = root;
-        while (node != null) {
-            int cmp = key.compareTo(node.key);
+        Node current = root;
+
+        while (current != null) {
+            int cmp = key.compareTo(current.key);
             if (cmp < 0) {
-                node = node.left;
+                current = current.left;
             } else if (cmp > 0) {
-                node = node.right;
+                current = current.right;
             } else {
-                return node.val;
+                return current.val;
             }
         }
+
         return null;
     }
 
     /**
-     * Deletes a node with the given key from the BST.
+     * Deletes a node with the given key from the BST (iterative).
      */
     public void delete(K key) {
-        root = delete(root, key);
+        root = deleteNode(root, key);
     }
 
-    private Node delete(Node node, K key) {
-        if (node == null) return null;
+    private Node deleteNode(Node root, K key) {
+        Node parent = null;
+        Node current = root;
 
-        int cmp = key.compareTo(node.key);
-        if (cmp < 0) {
-            node.left = delete(node.left, key);
-        } else if (cmp > 0) {
-            node.right = delete(node.right, key);
-        } else {
-            size--;
-            if (node.left == null) return node.right;
-            if (node.right == null) return node.left;
-
-            Node temp = node;
-            node = min(temp.right);
-            node.right = deleteMin(temp.right);
-            node.left = temp.left;
+        // Search for the node
+        while (current != null && !current.key.equals(key)) {
+            parent = current;
+            if (key.compareTo(current.key) < 0) {
+                current = current.left;
+            } else {
+                current = current.right;
+            }
         }
-        return node;
-    }
 
-    // Helper method to find the minimum node in a subtree
-    private Node min(Node node) {
-        if (node.left == null) return node;
-        return min(node.left);
-    }
+        if (current == null) {
+            return root; // Key not found
+        }
 
-    // Helper method to delete the minimum node in a subtree
-    private Node deleteMin(Node node) {
-        if (node.left == null) return node.right;
-        node.left = deleteMin(node.left);
-        return node;
+        // Case 1: Node has no children
+        if (current.left == null && current.right == null) {
+            if (current != root) {
+                if (parent.left == current) parent.left = null;
+                else parent.right = null;
+            } else {
+                root = null;
+            }
+        }
+        // Case 2: Node has two children
+        else if (current.left != null && current.right != null) {
+            Node successor = findMin(current.right);
+            K valKey = successor.key;
+            V valVal = successor.val;
+            delete(successor.key);
+            current.key = valKey;
+            current.val = valVal;
+        }
+        // Case 3: Node has one child
+        else {
+            Node child = (current.left != null) ? current.left : current.right;
+            if (current != root) {
+                if (current == parent.left) parent.left = child;
+                else parent.right = child;
+            } else {
+                root = child;
+            }
+        }
+
+        size--;
+        return root;
     }
 
     /**
-     * Returns the number of nodes (key-value pairs) in the BST.
+     * Helper method to find the node with the minimum key (iterative).
+     */
+    private Node findMin(Node node) {
+        Node current = node;
+        while (current != null && current.left != null) {
+            current = current.left;
+        }
+        return current;
+    }
+
+    /**
+     * Returns the number of key-value pairs in the BST.
      */
     public int size() {
         return size;
@@ -135,16 +180,21 @@ public class BST<K extends Comparable<K>, V> implements Iterable<BST.KeyValue<K,
     @Override
     public Iterator<KeyValue<K, V>> iterator() {
         List<KeyValue<K, V>> list = new ArrayList<>();
-        inOrder(root, list);
+        Stack<Node> stack = new Stack<>();
+        Node current = root;
+
+        while (current != null || !stack.isEmpty()) {
+            while (current != null) {
+                stack.push(current);
+                current = current.left;
+            }
+            current = stack.pop();
+            list.add(new KeyValue<>(current.key, current.val));
+            current = current.right;
+        }
+
         return list.iterator();
     }
-
-    // Helper method for in-order traversal
-    private void inOrder(Node node, List<KeyValue<K, V>> list) {
-        if (node == null) return;
-        inOrder(node.left, list);
-        list.add(new KeyValue<>(node.key, node.val)); // Add key-value pair during in-order traversal
-        inOrder(node.right, list);
-    }
 }
+
 
